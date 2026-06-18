@@ -1,9 +1,5 @@
-"""
-Modelos Pydantic — equivalente a los Serializers de Django REST Framework.
-Validan los datos y generan la documentación automática en /docs
-"""
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 
 class Gol(BaseModel):
@@ -23,13 +19,12 @@ class Partido(BaseModel):
     ground: Optional[str] = None
     goles_local: Optional[int] = None
     goles_visitante: Optional[int] = None
-    goleadores_local: list[Gol] = []
-    goleadores_visitante: list[Gol] = []
+    goleadores_local: List[Gol] = []
+    goleadores_visitante: List[Gol] = []
     jugado: bool = False
 
 
 class EquipoStanding(BaseModel):
-    """Una fila de la tabla de posiciones."""
     nombre: str
     jugados: int = 0
     ganados: int = 0
@@ -43,5 +38,11 @@ class EquipoStanding(BaseModel):
 
 class Grupo(BaseModel):
     nombre: str
-    equipos: list[EquipoStanding]
-    partidos: list[Partido] = []
+    equipos: List[EquipoStanding]
+    partidos: List[Partido] = []
+
+
+class Equipo(BaseModel):
+    nombre: str
+    grupo: str
+    avanza: Optional[bool] = None
