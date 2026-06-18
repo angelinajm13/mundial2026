@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mundial 2026 🏆</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-gray-900 border-b border-gray-800 py-4 px-6 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">🏆</span>
+      <div>
+        <h1 class="text-xl font-bold text-white">Mundial 2026</h1>
+        <p class="text-xs text-gray-400">Fase de Grupos</p>
+      </div>
+    </div>
+    <button onclick="refrescarDatos()" class="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-2 rounded-lg transition">
+      🔄 Actualizar datos
+    </button>
+  </header>
+
+  <!-- Tabs -->
+  <div class="bg-gray-900 border-b border-gray-800 px-6">
+    <div class="flex gap-1 max-w-7xl mx-auto">
+      <button onclick="cambiarTab('grupos')" id="tab-grupos"
+        class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-yellow-400 text-yellow-400 transition">
+        Grupos
+      </button>
+      <button onclick="cambiarTab('goleadores')" id="tab-goleadores"
+        class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition">
+        ⚽ Goleadores
+      </button>
+      <button onclick="cambiarTab('bracket')" id="tab-bracket"
+        class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition">
+        🏆 Bracket
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 py-8">
+
+    <div id="loading" class="text-center py-20 text-gray-400">
+      <div class="text-4xl mb-3">⚽</div>
+      <p>Cargando datos...</p>
+    </div>
+
+    <div id="error" class="hidden text-center py-20 text-red-400">
+      <p class="text-2xl mb-2">❌</p>
+      <p id="error-msg"></p>
+    </div>
+
+    <!-- VISTA: Grupos -->
+    <div id="vista-grupos" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+
+    <!-- VISTA: Goleadores -->
+    <div id="vista-goleadores" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Tabla de goleadores</h2>
+          <div id="lista-goleadores" class="flex flex-col gap-2"></div>
+        </div>
+        <div id="detalle-goleador" class="hidden">
+          <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Detalle</h2>
+          <div id="detalle-contenido" class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden"></div>
+        </div>
+        <div id="placeholder-goleador" class="flex items-center justify-center text-gray-600 text-sm py-16 lg:py-0">
+          <div class="text-center">
+            <div class="text-4xl mb-2">👆</div>
+            <p>Selecciona un goleador para ver sus anotaciones</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA: Bracket -->
+    <div id="vista-bracket" class="hidden">
+      <div id="bracket-loading" class="text-center py-10 text-gray-500 text-sm">Cargando bracket...</div>
+      <div id="bracket-contenido" class="hidden"></div>
+    </div>
+
+  </main>
+
+  <script>
+    const API = '';
+    let datosGrupos = [];
+    let datosBracket = [];
+    let tabActual = 'grupos';
+
+    // ─── TABS ──────────────────────────────────────────────────────
+    function cambiarTab(tab) {
+      tabActual = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-yellow-400', 'text-yellow-400');
+        btn.classList.add('border-transparent', 'text-gray-400');
+      });
+      document.getElementById(`tab-${tab}`).classList.add('border-yellow-400', 'text-yellow-400');
+      document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-400');
+
+      ['grupos', 'goleadores', 'bracket'].forEach(v =>
+        document.getElementById(`vista-${v}`).classList.add('hidden')
+      );
+      document.getElementById(`vista-${tab}`).classList.remove('hidden');
+
+      if (tab === 'goleadores') renderizarGoleadores();
+      if (tab === 'bracket') cargarBracket();
+    }
+
+    // ─── CARGA ─────────────────────────────────────────────────────
+    async function cargarDatos() {
+      try {
+        const res = await fetch(`${API}/api/grupos/`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        datosGrupos = await res.json();
+        renderizarGrupos(datosGrupos);
+      } catch (e) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+        document.getElementById('error-msg').textContent = `Error: ${e.message}`;
+      }
+    }
+
+    async function cargarBracket() {
+      if (datosBracket.length > 0) { renderizarBracket(datosBracket); return; }
+      document.getElementById('bracket-loading').classList.remove('hidden');
+      document.getElementById('bracket-contenido').classList.add('hidden');
+      try {
+        const res = await fetch(`${API}/api/bracket/`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        datosBracket = await res.json();
+        renderizarBracket(datosBracket);
+      } catch (e) {
+        document.getElementById('bracket-loading').textContent = `Error cargando bracket: ${e.message}`;
+      }
+    }
+
+    async function refrescarDatos() {
+      ['grupos','goleadores','bracket'].forEach(v =>
+        document.getElementById(`vista-${v}`).classList.add('hidden')
+      );
+      document.getElementById('loading').classList.remove('hidden');
+      datosBracket = [];
+      await fetch(`${API}/api/grupos/refresh`);
+      await cargarDatos();
+      if (tabActual === 'goleadores') renderizarGoleadores();
+      if (tabActual === 'bracket') cargarBracket();
+    }
+
+    // ─── GRUPOS ────────────────────────────────────────────────────
+    function renderizarGrupos(grupos) {
+      const container = document.getElementById('vista-grupos');
+      container.innerHTML = '';
+      grupos.forEach(grupo => {
+        const card = document.createElement('div');
+        card.className = 'bg-gray-900 rounded-xl border border-gray-800 overflow-hidden';
+        const jugados = grupo.partidos.filter(p => p.jugado);
+        card.innerHTML = `
+          <div class="bg-gray-800 px-4 py-3 flex items-center justify-between">
+            <h2 class="font-bold text-white">${grupo.nombre}</h2>
+            <span class="text-xs text-gray-400">${jugados.length} partidos jugados</span>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-gray-500 border-b border-gray-800">
+                <th class="text-left px-4 py-2">Equipo</th>
+                <th class="px-2 py-2">PJ</th><th class="px-2 py-2">G</th>
+                <th class="px-2 py-2">E</th><th class="px-2 py-2">P</th>
+                <th class="px-2 py-2">GD</th>
+                <th class="px-2 py-2 text-yellow-400 font-bold">Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${grupo.equipos.map((eq, idx) => `
+                <tr class="border-b border-gray-800 hover:bg-gray-800 transition ${idx < 2 ? 'text-white' : 'text-gray-400'}">
+                  <td class="px-4 py-2 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold
+                      ${idx===0?'bg-yellow-500 text-black':idx===1?'bg-gray-400 text-black':'bg-gray-700 text-gray-300'}">
+                      ${idx+1}
+                    </span>${eq.nombre}
+                  </td>
+                  <td class="text-center px-2 py-2">${eq.jugados}</td>
+                  <td class="text-center px-2 py-2">${eq.ganados}</td>
+                  <td class="text-center px-2 py-2">${eq.empatados}</td>
+                  <td class="text-center px-2 py-2">${eq.perdidos}</td>
+                  <td class="text-center px-2 py-2 ${eq.diferencia>0?'text-green-400':eq.diferencia<0?'text-red-400':''}">
+                    ${eq.diferencia>0?'+':''}${eq.diferencia}
+                  </td>
+                  <td class="text-center px-2 py-2 font-bold text-yellow-400">${eq.puntos}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          ${jugados.length > 0 ? `
+          <div class="px-4 py-3 border-t border-gray-800">
+            <p class="text-xs text-gray-500 mb-2 uppercase tracking-wider">Resultados</p>
+            ${jugados.map(p => `
+              <div class="flex items-center justify-between text-xs py-1">
+                <span class="text-right w-2/5 truncate ${p.goles_local>p.goles_visitante?'text-white font-semibold':'text-gray-400'}">${p.team1}</span>
+                <span class="mx-2 bg-gray-800 px-2 py-0.5 rounded font-mono font-bold text-white">${p.goles_local} - ${p.goles_visitante}</span>
+                <span class="text-left w-2/5 truncate ${p.goles_visitante>p.goles_local?'text-white font-semibold':'text-gray-400'}">${p.team2}</span>
+              </div>`).join('')}
+          </div>` : '<div class="px-4 py-3 text-xs text-gray-600 border-t border-gray-800">Sin partidos jugados aún</div>'}
+        `;
+        container.appendChild(card);
+      });
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('vista-grupos').classList.remove('hidden');
+    }
+
+    // ─── GOLEADORES ────────────────────────────────────────────────
+    function extraerGoleadores() {
+      const mapa = {};
+      datosGrupos.forEach(grupo => {
+        grupo.partidos.forEach(partido => {
+          if (!partido.jugado) return;
+          const procesar = (goles, equipo) => {
+            goles.forEach(gol => {
+              if (!mapa[gol.name]) mapa[gol.name] = { nombre: gol.name, equipo, grupo: grupo.nombre, anotaciones: [] };
+              mapa[gol.name].anotaciones.push({
+                minuto: gol.minute, penal: gol.penalty||false, autogol: gol.owngoal||false,
+                rival: equipo===partido.team1 ? partido.team2 : partido.team1,
+                partido: `${partido.team1} ${partido.goles_local}–${partido.goles_visitante} ${partido.team2}`,
+                fecha: partido.date, sede: partido.ground, grupo: grupo.nombre,
+              });
+            });
+          };
+          procesar(partido.goleadores_local, partido.team1);
+          procesar(partido.goleadores_visitante, partido.team2);
+        });
+      });
+      return Object.values(mapa).sort((a,b) => b.anotaciones.length - a.anotaciones.length);
+    }
+
+    function tipoGol(a) {
+      if (a.autogol) return { etiqueta:'Autogol', color:'bg-red-900 text-red-300', icono:'😬' };
+      if (a.penal)   return { etiqueta:'Penal',   color:'bg-blue-900 text-blue-300', icono:'🎯' };
+      return               { etiqueta:'Gol',     color:'bg-green-900 text-green-300', icono:'⚽' };
+    }
+
+    function renderizarGoleadores() {
+      const goleadores = extraerGoleadores();
+      const lista = document.getElementById('lista-goleadores');
+      lista.innerHTML = '';
+      if (!goleadores.length) { lista.innerHTML = '<p class="text-gray-500 text-sm">Aún no hay goles.</p>'; return; }
+      goleadores.forEach((g, idx) => {
+        const card = document.createElement('button');
+        card.className = 'w-full text-left bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-600 rounded-xl px-4 py-3 transition flex items-center justify-between gap-3';
+        card.onclick = () => mostrarDetalle(g, card);
+        const penales = g.anotaciones.filter(a=>a.penal).length;
+        const autogoles = g.anotaciones.filter(a=>a.autogol).length;
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0
+              ${idx===0?'bg-yellow-500 text-black':idx===1?'bg-gray-300 text-black':idx===2?'bg-amber-700 text-white':'bg-gray-800 text-gray-400'}">
+              ${idx+1}
+            </span>
+            <div>
+              <p class="text-white font-medium text-sm">${g.nombre}</p>
+              <p class="text-xs text-gray-500">${g.equipo} · ${g.grupo}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            ${penales>0?`<span class="text-xs text-blue-400">🎯 ${penales}P</span>`:''}
+            ${autogoles>0?`<span class="text-xs text-red-400">😬 ${autogoles}AG</span>`:''}
+            <span class="text-xl font-bold text-yellow-400">${g.anotaciones.length}</span>
+            <span class="text-xs text-gray-500">⚽</span>
+          </div>`;
+        lista.appendChild(card);
+      });
+    }
+
+    function mostrarDetalle(goleador, btnActivo) {
+      document.querySelectorAll('#lista-goleadores button').forEach(b => {
+        b.classList.remove('border-yellow-500','bg-gray-800');
+        b.classList.add('border-gray-800');
+      });
+      btnActivo.classList.add('border-yellow-500','bg-gray-800');
+      btnActivo.classList.remove('border-gray-800');
+      document.getElementById('placeholder-goleador').classList.add('hidden');
+      document.getElementById('detalle-goleador').classList.remove('hidden');
+      const porPartido = {};
+      goleador.anotaciones.forEach(a => {
+        if (!porPartido[a.partido]) porPartido[a.partido] = { partido:a.partido, fecha:a.fecha, sede:a.sede, grupo:a.grupo, goles:[] };
+        porPartido[a.partido].goles.push(a);
+      });
+      document.getElementById('detalle-contenido').innerHTML = `
+        <div class="bg-gray-800 px-5 py-4 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-black text-lg font-bold shrink-0">
+            ${goleador.nombre.split(' ').map(n=>n[0]).slice(0,2).join('')}
+          </div>
+          <div>
+            <h3 class="text-white font-bold text-base">${goleador.nombre}</h3>
+            <p class="text-gray-400 text-xs">${goleador.equipo} · ${goleador.grupo}</p>
+          </div>
+          <div class="ml-auto text-right">
+            <p class="text-3xl font-bold text-yellow-400">${goleador.anotaciones.length}</p>
+            <p class="text-xs text-gray-500">goles</p>
+          </div>
+        </div>
+        <div class="divide-y divide-gray-800">
+          ${Object.values(porPartido).map(p => `
+            <div class="px-5 py-3">
+              <p class="text-xs text-gray-500 mb-1">📅 ${formatearFecha(p.fecha)} · ${p.grupo} · ${p.sede}</p>
+              <p class="text-sm text-gray-300 font-medium mb-2">${p.partido}</p>
+              <div class="flex flex-col gap-1">
+                ${p.goles.map(g => {
+                  const t = tipoGol(g);
+                  return `<div class="flex items-center gap-2 text-sm">
+                    <span>${t.icono}</span>
+                    <span class="font-mono text-yellow-400 text-xs w-10 shrink-0">⏱ ${g.minuto}'</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full ${t.color}">${t.etiqueta}</span>
+                    ${g.autogol?`<span class="text-xs text-gray-500">en portería de ${g.rival}</span>`:''}
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    // ─── BRACKET ───────────────────────────────────────────────────
+    const ICONOS_RONDA = {
+      'Round of 32':        { icono: '⚔️', label: 'Octavos de final' },
+      'Round of 16':        { icono: '🔥', label: 'Octavos (R16)' },
+      'Quarter-final':      { icono: '💥', label: 'Cuartos de final' },
+      'Semi-final':         { icono: '⚡', label: 'Semifinales' },
+      'Match for third place': { icono: '🥉', label: 'Tercer lugar' },
+      'Final':              { icono: '🏆', label: 'FINAL' },
+    };
+
+    function colorEquipo(nombre) {
+      // Si es placeholder (1A, W74, etc.) lo ponemos más opaco
+      return /^[0-9W L]/.test(nombre) ? 'text-gray-500 italic' : 'text-white font-medium';
+    }
+
+    function esPlaceholder(nombre) {
+      return /^[0-9WL]/.test(nombre) || nombre.includes('/');
+    }
+
+    function renderizarBracket(data) {
+      document.getElementById('bracket-loading').classList.add('hidden');
+      const contenido = document.getElementById('bracket-contenido');
+      contenido.classList.remove('hidden');
+      contenido.innerHTML = '';
+
+      data.forEach(({ ronda, partidos }) => {
+        const meta = ICONOS_RONDA[ronda] || { icono: '⚽', label: ronda };
+        const esFinal = ronda === 'Final';
+        const esTercer = ronda === 'Match for third place';
+
+        const section = document.createElement('div');
+        section.className = 'mb-8';
+
+        // Header de la ronda
+        section.innerHTML = `
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-2xl">${meta.icono}</span>
+            <h2 class="text-lg font-bold ${esFinal ? 'text-yellow-400' : esTercer ? 'text-amber-600' : 'text-white'}">${meta.label}</h2>
+            <div class="flex-1 h-px bg-gray-800"></div>
+            <span class="text-xs text-gray-600">${partidos.length} ${partidos.length===1?'partido':'partidos'}</span>
+          </div>
+        `;
+
+        // Grid de partidos
+        const cols = esFinal || esTercer ? 'grid-cols-1 max-w-sm mx-auto'
+                   : partidos.length <= 2  ? 'grid-cols-1 sm:grid-cols-2'
+                   : partidos.length <= 4  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                   : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8';
+
+        const grid = document.createElement('div');
+        grid.className = `grid ${cols} gap-3`;
+
+        partidos.forEach(p => {
+          const jugado = p.jugado;
+          const ph1 = esPlaceholder(p.team1);
+          const ph2 = esPlaceholder(p.team2);
+          const ganador1 = jugado && p.goles_local > p.goles_visitante;
+          const ganador2 = jugado && p.goles_visitante > p.goles_local;
+
+          const card = document.createElement('div');
+          card.className = `bg-gray-900 border rounded-xl overflow-hidden ${esFinal ? 'border-yellow-500' : 'border-gray-800'}`;
+
+          card.innerHTML = `
+            <!-- Fecha y sede -->
+            <div class="px-3 py-2 bg-gray-800 text-xs text-gray-400 flex justify-between">
+              <span>📅 ${formatearFecha(p.date)}</span>
+              <span class="truncate ml-2 text-gray-600">${p.ground || ''}</span>
+            </div>
+
+            <!-- Equipo local -->
+            <div class="flex items-center justify-between px-3 py-2.5 border-b border-gray-800
+              ${ganador1 ? 'bg-green-950' : ''}">
+              <span class="text-sm ${ph1 ? 'text-gray-500 italic' : ganador1 ? 'text-green-300 font-bold' : 'text-white'} truncate">
+                ${p.team1}
+              </span>
+              ${jugado
+                ? `<span class="text-lg font-bold ml-2 shrink-0 ${ganador1 ? 'text-green-400' : 'text-gray-400'}">${p.goles_local}</span>`
+                : `<span class="text-xs text-gray-700 ml-2 shrink-0">—</span>`
+              }
+            </div>
+
+            <!-- Equipo visitante -->
+            <div class="flex items-center justify-between px-3 py-2.5
+              ${ganador2 ? 'bg-green-950' : ''}">
+              <span class="text-sm ${ph2 ? 'text-gray-500 italic' : ganador2 ? 'text-green-300 font-bold' : 'text-white'} truncate">
+                ${p.team2}
+              </span>
+              ${jugado
+                ? `<span class="text-lg font-bold ml-2 shrink-0 ${ganador2 ? 'text-green-400' : 'text-gray-400'}">${p.goles_visitante}</span>`
+                : `<span class="text-xs text-gray-700 ml-2 shrink-0">—</span>`
+              }
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+
+        section.appendChild(grid);
+        contenido.appendChild(section);
+      });
+    }
+
+    // ─── UTILS ─────────────────────────────────────────────────────
+    function formatearFecha(dateStr) {
+      const [y,m,d] = dateStr.split('-');
+      const meses = ['','ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      return `${parseInt(d)} ${meses[parseInt(m)]}`;
+    }
+
+    // ─── INIT ──────────────────────────────────────────────────────
+    cargarDatos();
+  </script>
+</body>
+</html>
