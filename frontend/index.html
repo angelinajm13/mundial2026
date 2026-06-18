@@ -86,6 +86,25 @@
   <script>
     const API = '';
     let datosGrupos = [];
+
+    const BANDERAS = {
+      "Mexico": "🇲🇽", "South Africa": "🇿🇦", "South Korea": "🇰🇷", "Czech Republic": "🇨🇿",
+      "Canada": "🇨🇦", "Bosnia & Herzegovina": "🇧🇦", "Qatar": "🇶🇦", "Switzerland": "🇨🇭",
+      "Brazil": "🇧🇷", "Morocco": "🇲🇦", "Haiti": "🇭🇹", "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+      "USA": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Turkey": "🇹🇷",
+      "Germany": "🇩🇪", "Curaçao": "🇨🇼", "Ivory Coast": "🇨🇮", "Ecuador": "🇪🇨",
+      "Netherlands": "🇳🇱", "Japan": "🇯🇵", "Sweden": "🇸🇪", "Tunisia": "🇹🇳",
+      "Belgium": "🇧🇪", "Egypt": "🇪🇬", "Iran": "🇮🇷", "New Zealand": "🇳🇿",
+      "Spain": "🇪🇸", "Cape Verde": "🇨🇻", "Saudi Arabia": "🇸🇦", "Uruguay": "🇺🇾",
+      "France": "🇫🇷", "Senegal": "🇸🇳", "Iraq": "🇮🇶", "Norway": "🇳🇴",
+      "Argentina": "🇦🇷", "Algeria": "🇩🇿", "Austria": "🇦🇹", "Jordan": "🇯🇴",
+      "Portugal": "🇵🇹", "DR Congo": "🇨🇩", "Uzbekistan": "🇺🇿", "Colombia": "🇨🇴",
+      "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croatia": "🇭🇷", "Ghana": "🇬🇭", "Panama": "🇵🇦",
+    };
+
+    function bandera(nombre) {
+      return BANDERAS[nombre] ? `${BANDERAS[nombre]} ` : '';
+    }
     let datosBracket = [];
     let tabActual = 'grupos';
 
@@ -178,7 +197,7 @@
                     <span class="w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold
                       ${idx===0?'bg-yellow-500 text-black':idx===1?'bg-gray-400 text-black':'bg-gray-700 text-gray-300'}">
                       ${idx+1}
-                    </span>${eq.nombre}
+                    </span>${bandera(eq.nombre)}${eq.nombre}
                   </td>
                   <td class="text-center px-2 py-2">${eq.jugados}</td>
                   <td class="text-center px-2 py-2">${eq.ganados}</td>
@@ -196,9 +215,9 @@
             <p class="text-xs text-gray-500 mb-2 uppercase tracking-wider">Resultados</p>
             ${jugados.map(p => `
               <div class="flex items-center justify-between text-xs py-1">
-                <span class="text-right w-2/5 truncate ${p.goles_local>p.goles_visitante?'text-white font-semibold':'text-gray-400'}">${p.team1}</span>
+                <span class="text-right w-2/5 truncate ${p.goles_local>p.goles_visitante?'text-white font-semibold':'text-gray-400'}">${bandera(p.team1)}${p.team1}</span>
                 <span class="mx-2 bg-gray-800 px-2 py-0.5 rounded font-mono font-bold text-white">${p.goles_local} - ${p.goles_visitante}</span>
-                <span class="text-left w-2/5 truncate ${p.goles_visitante>p.goles_local?'text-white font-semibold':'text-gray-400'}">${p.team2}</span>
+                <span class="text-left w-2/5 truncate ${p.goles_visitante>p.goles_local?'text-white font-semibold':'text-gray-400'}">${bandera(p.team2)}${p.team2}</span>
               </div>`).join('')}
           </div>` : '<div class="px-4 py-3 text-xs text-gray-600 border-t border-gray-800">Sin partidos jugados aún</div>'}
         `;
@@ -257,7 +276,7 @@
             </span>
             <div>
               <p class="text-white font-medium text-sm">${g.nombre}</p>
-              <p class="text-xs text-gray-500">${g.equipo} · ${g.grupo}</p>
+              <p class="text-xs text-gray-500">${bandera(g.equipo)}${g.equipo} · ${g.grupo}</p>
             </div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
@@ -291,7 +310,7 @@
           </div>
           <div>
             <h3 class="text-white font-bold text-base">${goleador.nombre}</h3>
-            <p class="text-gray-400 text-xs">${goleador.equipo} · ${goleador.grupo}</p>
+            <p class="text-gray-400 text-xs">${bandera(goleador.equipo)}${goleador.equipo} · ${goleador.grupo}</p>
           </div>
           <div class="ml-auto text-right">
             <p class="text-3xl font-bold text-yellow-400">${goleador.anotaciones.length}</p>
@@ -391,7 +410,7 @@
             <div class="flex items-center justify-between px-3 py-2.5 border-b border-gray-800
               ${ganador1 ? 'bg-green-950' : ''}">
               <span class="text-sm ${ph1 ? 'text-gray-500 italic' : ganador1 ? 'text-green-300 font-bold' : 'text-white'} truncate">
-                ${p.team1}
+                ${bandera(p.team1)}${p.team1}
               </span>
               ${jugado
                 ? `<span class="text-lg font-bold ml-2 shrink-0 ${ganador1 ? 'text-green-400' : 'text-gray-400'}">${p.goles_local}</span>`
@@ -403,7 +422,7 @@
             <div class="flex items-center justify-between px-3 py-2.5
               ${ganador2 ? 'bg-green-950' : ''}">
               <span class="text-sm ${ph2 ? 'text-gray-500 italic' : ganador2 ? 'text-green-300 font-bold' : 'text-white'} truncate">
-                ${p.team2}
+                ${bandera(p.team2)}${p.team2}
               </span>
               ${jugado
                 ? `<span class="text-lg font-bold ml-2 shrink-0 ${ganador2 ? 'text-green-400' : 'text-gray-400'}">${p.goles_visitante}</span>`
